@@ -6,11 +6,14 @@ html, body {
     background-size: cover;
     font-family: "Century Gothic", Arial, Helvetica, sans-serif;
     height: 100%;
-    overflow: hidden; /* Отключаем прокрутку страницы */
+    width: 100%;
+    overflow: auto;
 }
+
 .theme-background--dark{
     background-image: url('img/w.png');
 }
+
 .header {
     position: fixed;
     top: 0;
@@ -28,37 +31,42 @@ html, body {
 
 .main-container {
     display: flex;
+    justify-content: space-between;
     align-items: flex-start;
-    justify-content: left;
-    height: 100vh;
+    height: calc(100vh - 50px);
+    padding-top: 50px;
+    box-sizing: border-box;
     width: 100%;
-    margin-top: 50px;
-
+    max-width: 1200px;
+    margin: 0 auto;
+    position: relative;
 }
 
 .left-container {
+    position: fixed;
+    top: 60px;
+    left: 5px;
     width: 60px;
     display: flex;
     flex-direction: column;
-    margin-top: 0;
-    margin-left: 0px;
-    margin-right: 100px;
-    height: calc(100vh - 50px);
+    height: auto;
     user-select: none;
-
 }
 
 .calculator-container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    flex: 0 0 250px;
-    padding: 10px;
-    padding-left: 15px;
+    width: 320px;
+    padding: 20px;
     border-radius: 30px;
-    margin-left: 220px;
     background-color: #383737;
-    height: auto; /* Установите высоту на auto, чтобы она подстраивалась под содержимое */
+    height: auto;
+    margin: 0 auto;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    box-sizing: border-box;
 }
 
 .button-container {
@@ -75,7 +83,7 @@ html, body {
 
 .right-container {
     position: fixed;
-    top: 60px; /* Positioned below the header */
+    top: 60px;
     right: 20px;
     display: flex;
     flex-direction: column;
@@ -91,16 +99,16 @@ html, body {
     color: white;
     padding: 10px;
     font-size: 15px;
-    position: static; /* Заменяем absolute на static */
     display: block;
+    text-align: center;
 }
 
 .my-btn {
     border-radius: 10px;
-    margin-right: 7px;
+    margin-right: 5px;
     margin-top: 5px;
-    width: 40px;
-    height: 40px;
+    width: 45px;
+    height: 45px;
     border: none;
     background: #0c6eff;
     color: white;
@@ -128,16 +136,15 @@ html, body {
 }
 
 .my-btn.execute {
-    width: 87px;
+    width: 97px;
 }
 
 .result {
-    width: 95%;
+    width: 100%;
     height: 70px;
     margin-bottom: 15px;
     background: #0077ff;
     padding: 10px;
-    padding-right: 5px;
     box-sizing: border-box;
     text-align: right;
     color: white;
@@ -147,13 +154,8 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-}
-
-.footer {
-    margin-top: 20px;
-    font-size: 1rem;
-    text-align: center;
-    font-weight: lighter;
+    overflow: hidden;
+    word-break: break-all;
 }
 
 .menu-button {
@@ -165,8 +167,6 @@ html, body {
     height: 50px;
     font-size: 1.5rem;
     cursor: pointer;
-    margin-top: 10px;
-    margin-left: 5px;
     text-align: center;
     display: flex;
     align-items: center;
@@ -176,7 +176,6 @@ html, body {
 .submenu {
     flex-direction: column;
     margin-top: 10px;
-    margin-left: 5px;
     display: none;
     width: 50px;
 }
@@ -195,4 +194,53 @@ html, body {
 
 .submenu-btn:hover {
     background: #0369de;
+}
+
+/* Add smooth scaling with zoom */
+@media screen and (max-width: 1200px) {
+    .calculator-container {
+        transform: translateX(-50%) scale(0.9);
+        transform-origin: center center;
+    }
+}
+
+@media screen and (max-width: 1000px) {
+    .calculator-container {
+        transform: translateX(-50%) scale(0.8);
+    }
+}
+
+@media screen and (max-width: 800px) {
+    .calculator-container {
+        transform: translateX(-50%) scale(0.7);
+    }
+}
+
+@media screen and (max-width: 600px) {
+    .main-container {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .left-container {
+        position: relative;
+        top: 0;
+        left: 0;
+        margin-bottom: 20px;
+    }
+
+    .calculator-container {
+        position: relative;
+        left: 0;
+        transform: none;
+        margin: 20px auto;
+    }
+
+    .right-container {
+        position: relative;
+        top: 0;
+        right: 0;
+        margin-top: 20px;
+        align-self: center;
+    }
 }
