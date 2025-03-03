@@ -1,0 +1,198 @@
+html, body {
+    background-color: black;
+    color: white;
+    margin: 0;
+    background-image: url('img/q.png');
+    background-size: cover;
+    font-family: "Century Gothic", Arial, Helvetica, sans-serif;
+    height: 100%;
+    overflow: hidden; /* Отключаем прокрутку страницы */
+}
+.theme-background--dark{
+    background-image: url('img/w.png');
+}
+.header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: #0c6eff;
+    color: white;
+    text-align: center;
+    padding: 10px 0;
+    font-family: "Century Gothic", Arial, Helvetica, sans-serif;
+    z-index: 1000;
+    font-weight: bold;
+    user-select: none;
+}
+
+.main-container {
+    display: flex;
+    align-items: flex-start;
+    justify-content: left;
+    height: 100vh;
+    width: 100%;
+    margin-top: 50px;
+
+}
+
+.left-container {
+    width: 60px;
+    display: flex;
+    flex-direction: column;
+    margin-top: 0;
+    margin-left: 0px;
+    margin-right: 100px;
+    height: calc(100vh - 50px);
+    user-select: none;
+
+}
+
+.calculator-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 0 0 250px;
+    padding: 10px;
+    padding-left: 15px;
+    border-radius: 30px;
+    margin-left: 220px;
+    background-color: #383737;
+    height: auto; /* Установите высоту на auto, чтобы она подстраивалась под содержимое */
+}
+
+.button-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.button-container > div {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+
+.right-container {
+    position: fixed;
+    top: 60px; /* Positioned below the header */
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    user-select: none;
+}
+
+.Git {
+    background-color: #ff2840;
+    border-radius: 30px;
+    width: 45px;
+    height: 20px;
+    text-decoration: none;
+    color: white;
+    padding: 10px;
+    font-size: 15px;
+    position: static; /* Заменяем absolute на static */
+    display: block;
+}
+
+.my-btn {
+    border-radius: 10px;
+    margin-right: 7px;
+    margin-top: 5px;
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: #0c6eff;
+    color: white;
+    font-size: 1rem;
+    font-weight: 300;
+    cursor: pointer;
+    user-select: none;
+    font-family: "Century Gothic", Arial, Helvetica, sans-serif;
+}
+
+.my-btn:hover {
+    background: #0369de;
+}
+
+.my-btn:active {
+    filter: brightness(130%);
+}
+
+.my-btn.primary {
+    background: #0077ff;
+}
+
+.my-btn.secondary {
+    background: #ff2840;
+}
+
+.my-btn.execute {
+    width: 87px;
+}
+
+.result {
+    width: 95%;
+    height: 70px;
+    margin-bottom: 15px;
+    background: #0077ff;
+    padding: 10px;
+    padding-right: 5px;
+    box-sizing: border-box;
+    text-align: right;
+    color: white;
+    font-size: 1.5rem;
+    border-radius: 30px;
+    font-family: "Century Gothic", Arial, Helvetica, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.footer {
+    margin-top: 20px;
+    font-size: 1rem;
+    text-align: center;
+    font-weight: lighter;
+}
+
+.menu-button {
+    background: #0c6eff;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    width: 50px;
+    height: 50px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    margin-top: 10px;
+    margin-left: 5px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.submenu {
+    flex-direction: column;
+    margin-top: 10px;
+    margin-left: 5px;
+    display: none;
+    width: 50px;
+}
+
+.submenu-btn {
+    background: #0077ff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    width: 50px;
+    height: 50px;
+    font-size: 1rem;
+    cursor: pointer;
+    margin-top: 5px;
+}
+
+.submenu-btn:hover {
+    background: #0369de;
+}
