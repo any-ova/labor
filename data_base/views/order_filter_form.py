@@ -2,15 +2,15 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QLineEdit, QPushButton, QTableWidget,
                              QTableWidgetItem, QMessageBox, QComboBox,
                              QHeaderView)
-from PyQt5.QtCore import Qt, QDate, pyqtSignal
+from PyQt5.QtCore import Qt, QDate
 from PyQt5 import QtGui
 
 
 class OrderFilterForm(QWidget):
-    def __init__(self, db_connection):
+    def __init__(self, order_controller):
         super().__init__()
-        self.db = db_connection
-        self.sort_order = Qt.DescendingOrder  # По умолчанию сортировка по убыванию
+        self.order_controller = order_controller
+        self.sort_order = Qt.DescendingOrder
         self.setup_ui()
         self.load_orders()
 
@@ -108,7 +108,7 @@ class OrderFilterForm(QWidget):
 
         # Включаем сортировку
         self.orders_table.setSortingEnabled(True)
-        self.orders_table.sortByColumn(1, Qt.DescendingOrder)  # Сортировка по дате по умолчанию (новые сначала)
+        self.orders_table.sortByColumn(1, Qt.DescendingOrder)
 
         # Подключаем сигнал сортировки
         self.orders_table.horizontalHeader().sectionClicked.connect(self.on_header_clicked)
@@ -132,15 +132,18 @@ class OrderFilterForm(QWidget):
     def on_header_clicked(self, logical_index):
         """Обработчик клика по заголовку таблицы"""
         if logical_index == 1:  # Дата
-            if self.orders_table.horizontalHeader().sortIndicatorOrder() == Qt.DescendingOrder:
-                self.sort_combo.setCurrentIndex(0)  # "По дате (новые)"
-            else:
-                self.sort_combo.setCurrentIndex(1)  # "По дате (старые)"
+            current_sort = getattr(self, 'current_date_sort', Qt.DescendingOrder)
+            new_sort = Qt.AscendingOrder if current_sort == Qt.DescendingOrder else Qt.DescendingOrder
+            self.current_date_sort = new_sort
+            self.sort_combo.setCurrentIndex(0 if new_sort == Qt.DescendingOrder else 1)
         elif logical_index == 4:  # Сумма
-            if self.orders_table.horizontalHeader().sortIndicatorOrder() == Qt.DescendingOrder:
-                self.sort_combo.setCurrentIndex(3)  # "По сумме (↓)"
-            else:
-                self.sort_combo.setCurrentIndex(2)  # "По сумме (↑)"
+            current_sort = getattr(self, 'current_amount_sort', Qt.AscendingOrder)
+            new_sort = Qt.AscendingOrder if current_sort == Qt.DescendingOrder else Qt.DescendingOrder
+            self.current_amount_sort = new_sort
+            self.sort_combo.setCurrentIndex(2 if new_sort == Qt.AscendingOrder else 3)
+
+        self.apply_sorting()
+
 
     def apply_sorting(self):
         """Применяет выбранную сортировку"""
@@ -156,62 +159,17 @@ class OrderFilterForm(QWidget):
             self.orders_table.sortByColumn(4, Qt.DescendingOrder)
 
     def load_orders(self):
-        """Загрузка заказов с применением фильтров и сортировки"""
+        """Загрузка заказов с применением фильтров"""
         try:
             # Подготавливаем параметры фильтрации
-            params = []
-            query = """
-                SELECT 
-                    o.id, 
-                    o.order_date, 
-                    c.surname || ' ' || c.name as client_name,
-                    c.phone,
-                    o.total, 
-                    o.status, 
-                    o.delivery_address
-                FROM orders o
-                JOIN client c ON o.client_id = c.id
-                WHERE 1=1
-            """
+            filters = {
+                'date': self.date_filter.text().strip(),
+                'client': self.client_filter.text().strip(),
+                'status': self.status_filter.currentText()
+            }
 
-            # Фильтр по дате
-            date_filter = self.date_filter.text().strip()
-            if date_filter:
-                try:
-                    QDate.fromString(date_filter, "yyyy-MM-dd")  # Проверка формата
-                    query += " AND o.order_date::date = %s"
-                    params.append(date_filter)
-                except:
-                    QMessageBox.warning(self, "Ошибка", "Неверный формат даты. Используйте гггг-мм-дд")
-                    return
-
-            # Фильтр по клиенту
-            client_filter = self.client_filter.text().strip()
-            if client_filter:
-                query += " AND (c.surname ILIKE %s OR c.name ILIKE %s)"
-                params.extend([f"%{client_filter}%", f"%{client_filter}%"])
-
-            # Фильтр по статусу
-            status = self.status_filter.currentText()
-            if status != "Все":
-                query += " AND o.status = %s"
-                params.append(status)
-
-            # Применяем сортировку в SQL запросе (для больших объемов данных)
-            sort_option = self.sort_combo.currentText()
-            if sort_option == "По дате (новые)":
-                query += " ORDER BY o.order_date DESC"
-            elif sort_option == "По дате (старые)":
-                query += " ORDER BY o.order_date ASC"
-            elif sort_option == "По сумме (↑)":
-                query += " ORDER BY o.total ASC"
-            elif sort_option == "По сумме (↓)":
-                query += " ORDER BY o.total DESC"
-            else:
-                query += " ORDER BY o.order_date DESC"  # По умолчанию
-
-            # Выполняем запрос
-            orders = self.db.execute_query(query, params, fetch=True)
+            # Получаем отфильтрованные заказы через контроллер
+            orders = self.order_controller.get_filtered_orders(filters)
 
             # Блокируем сортировку во время обновления данных
             self.orders_table.setSortingEnabled(False)
@@ -238,9 +196,9 @@ class OrderFilterForm(QWidget):
 
                     # Сумма
                     amount_item = QTableWidgetItem(f"{float(total):.2f}")
-                    amount_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
-                    amount_item.setData(Qt.UserRole, float(total))  # Для корректной сортировки чисел
+                    amount_item.setData(Qt.UserRole, float(total))
                     self.orders_table.setItem(row_idx, 4, amount_item)
+
 
                     # Статус
                     status_item = QTableWidgetItem(status)
@@ -255,7 +213,6 @@ class OrderFilterForm(QWidget):
 
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить заказы:\n{str(e)}")
-
 
     def set_status_color(self, item, status):
         """Установка цвета фона в зависимости от статуса"""

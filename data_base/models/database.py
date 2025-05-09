@@ -25,15 +25,23 @@ class Database:
     def execute_query(self, query, params=None, fetch=False):
         try:
             self.cursor.execute(query, params or ())
-            if fetch:
-                return self.cursor.fetchall()
-            self.conn.commit()
-            return True
+            result = self.cursor.fetchall() if fetch else None
+            self.conn.commit()  # Всегда делаем коммит
+            return result if fetch else True
         except Exception as e:
             self.conn.rollback()
             print(f"Error executing query: {e}")
-            return False
+            return None if fetch else False
 
+    def test_connection(self):
+        try:
+            self.cursor.execute("SELECT 1")
+            self.conn.commit()
+            print("Тест подключения: УСПЕШНО")
+            return True
+        except Exception as e:
+            print(f"Тест подключения: ОШИБКА - {e}")
+            return False
     def close(self):
         if self.cursor:
             self.cursor.close()

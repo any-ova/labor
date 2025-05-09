@@ -3,23 +3,25 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                              QTableWidgetItem, QMessageBox, QComboBox)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIntValidator
+from controllers.client_controller import ClientController
+from controllers.product_controller import ProductController
+from controllers.order_controller import OrderController
 
 
 class ClientOrderForm(QWidget):
     def __init__(self, db_connection):
         super().__init__()
-        self.db = db_connection
-        if not hasattr(self.db, 'execute_query'):
-            QMessageBox.critical(self, "Ошибка", "Неверный объект базы данных")
-            self.close()
-            return
+        # Инициализация контроллеров
+        self.client_controller = ClientController(db_connection)
+        self.product_controller = ProductController(db_connection)
+        self.order_controller = OrderController(db_connection)
 
         self.cart = []
         self.cart_items = {}
         self.current_client_id = None
         self.setup_ui()
         self.load_products()
-        self.update_cart_table()  # Инициализируем корзину
+        self.update_cart_table()
 
     def setup_ui(self):
         self.setWindowTitle("Оформление заказа")
@@ -30,18 +32,15 @@ class ClientOrderForm(QWidget):
         # ========== Поиск/создание клиента ==========
         client_search_layout = QHBoxLayout()
 
-        # Выбор режима (поиск или создание)
         self.client_mode = QComboBox()
         self.client_mode.addItems(["Поиск по телефону", "Создать нового клиента"])
         self.client_mode.currentIndexChanged.connect(self.toggle_client_mode)
         client_search_layout.addWidget(self.client_mode)
 
-        # Поле телефона (для поиска)
         self.client_phone_input = QLineEdit()
         self.client_phone_input.setPlaceholderText("Введите телефон")
         client_search_layout.addWidget(self.client_phone_input)
 
-        # Кнопка поиска/создания
         self.client_action_btn = QPushButton("Найти")
         self.client_action_btn.clicked.connect(self.handle_client_action)
         client_search_layout.addWidget(self.client_action_btn)
@@ -51,7 +50,6 @@ class ClientOrderForm(QWidget):
         # ========== Данные клиента ==========
         client_data_layout = QVBoxLayout()
 
-        # Имя
         name_layout = QHBoxLayout()
         name_layout.addWidget(QLabel("Имя:"))
         self.name_input = QLineEdit()
@@ -59,7 +57,6 @@ class ClientOrderForm(QWidget):
         name_layout.addWidget(self.name_input)
         client_data_layout.addLayout(name_layout)
 
-        # Фамилия
         surname_layout = QHBoxLayout()
         surname_layout.addWidget(QLabel("Фамилия:"))
         self.surname_input = QLineEdit()
@@ -67,7 +64,6 @@ class ClientOrderForm(QWidget):
         surname_layout.addWidget(self.surname_input)
         client_data_layout.addLayout(surname_layout)
 
-        # Email
         email_layout = QHBoxLayout()
         email_layout.addWidget(QLabel("Email:"))
         self.email_input = QLineEdit()
@@ -75,7 +71,6 @@ class ClientOrderForm(QWidget):
         email_layout.addWidget(self.email_input)
         client_data_layout.addLayout(email_layout)
 
-        # Телефон (только для отображения)
         phone_layout = QHBoxLayout()
         phone_layout.addWidget(QLabel("Телефон:"))
         self.phone_display = QLineEdit()
@@ -83,9 +78,8 @@ class ClientOrderForm(QWidget):
         phone_layout.addWidget(self.phone_display)
         client_data_layout.addLayout(phone_layout)
 
-        # Кнопка обновления данных
         self.update_btn = QPushButton("Обновить данные")
-        self.update_btn.setEnabled(False)  # Изначально неактивна
+        self.update_btn.setEnabled(False)
         self.update_btn.clicked.connect(self.update_client_data)
         client_data_layout.addWidget(self.update_btn)
 
@@ -99,23 +93,21 @@ class ClientOrderForm(QWidget):
         address_layout.addWidget(self.address_input)
         main_layout.addLayout(address_layout)
 
-
-
         # ========== Таблица товаров ==========
         main_layout.addWidget(QLabel("Выберите товары:"))
         self.products_table = QTableWidget()
-        self.products_table.setColumnCount(4)  # Товар, Цена, Количество, Добавить
+        self.products_table.setColumnCount(4)
         self.products_table.setHorizontalHeaderLabels(["Товар", "Цена", "Количество", "Добавить"])
         self.products_table.setEditTriggers(QTableWidget.NoEditTriggers)
         main_layout.addWidget(self.products_table)
 
         # ========== Корзина ==========
         main_layout.addWidget(QLabel("Корзина:"))
-        self.cart_table = QTableWidget()  # Создаем таблицу корзины
-        self.cart_table.setColumnCount(4)  # Товар, Цена, Количество, Удалить
+        self.cart_table = QTableWidget()
+        self.cart_table.setColumnCount(4)
         self.cart_table.setHorizontalHeaderLabels(["Товар", "Цена", "Количество", "Удалить"])
         self.cart_table.setEditTriggers(QTableWidget.NoEditTriggers)
-        main_layout.addWidget(self.cart_table)  # Добавляем таблицу в layout
+        main_layout.addWidget(self.cart_table)
 
         # ========== Кнопки ==========
         btn_layout = QHBoxLayout()
@@ -139,77 +131,64 @@ class ClientOrderForm(QWidget):
             return
 
         try:
-            result = self.db.execute_query(
-                "SELECT id, name, surname, email FROM client WHERE phone = %s",
-                (phone,),
-                fetch=True
-            )
+            result = self.client_controller.handle_client_search(phone)
 
             if not result:
-                QMessageBox.information(self, "Информация", "Клиент не найден. Заполните данные вручную")
+                # Клиент не найден - переходим в режим создания
+                self.clear_client_fields()
+                self.name_input.setReadOnly(False)
+                self.surname_input.setReadOnly(False)
+                self.email_input.setReadOnly(False)
+                self.phone_display.setText(phone)
+                self.update_btn.setEnabled(True)
+                self.update_btn.setText("Создать клиента")
                 self.current_client_id = None
-                self.update_btn.setEnabled(False)
+
+                QMessageBox.information(self, "Информация",
+                                        "Клиент не найден. Заполните данные для создания нового клиента")
                 return
 
-            client_id, name, surname, email = result[0]
+            # Клиент найден - заполняем данные
+            client_id, name, surname, email, phone = result[0]
             self.current_client_id = client_id
 
-            # Заполняем поля
             self.name_input.setText(name)
             self.surname_input.setText(surname)
             self.email_input.setText(email)
             self.phone_display.setText(phone)
-
-            # Активируем кнопку обновления
             self.update_btn.setEnabled(True)
-
-            QMessageBox.information(self, "Успех", "Данные клиента загружены")
+            self.update_btn.setText("Обновить данные")
 
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Ошибка при поиске клиента: {str(e)}")
-            self.clear_client_fields()
 
     def update_client_data(self):
-        """Обновляет или создает данные клиента"""
         phone = self.client_phone_input.text().strip()
-        if not phone:
-            QMessageBox.warning(self, "Ошибка", "Телефон обязателен")
-            return
-
         name = self.name_input.text().strip()
         surname = self.surname_input.text().strip()
         email = self.email_input.text().strip()
 
-        if not all([name, surname, email]):
-            QMessageBox.warning(self, "Ошибка", "Заполните все поля")
+        if not all([name, surname, phone]):
+            QMessageBox.warning(self, "Ошибка", "Имя, фамилия и телефон обязательны")
             return
 
         try:
-            # Создаем или обновляем клиента
-            result = self.db.execute_query(
-                "INSERT INTO client (name, surname, email, phone) "
-                "VALUES (%s, %s, %s, %s) "
-                "ON CONFLICT (phone) DO UPDATE SET "
-                "name = EXCLUDED.name, "
-                "surname = EXCLUDED.surname, "
-                "email = EXCLUDED.email "
-                "RETURNING id",
-                (name, surname, email, phone),
-                fetch=True
+            print(
+                f"Данные для обновления: name={name}, surname={surname}, email={email}, phone={phone}, client_id={self.current_client_id}")  # Отладочный вывод
+
+            result = self.client_controller.handle_client_update(
+                name, surname, email, phone, self.current_client_id
             )
 
             if result:
-                self.current_client_id = result[0][0]
-                QMessageBox.information(self, "Успех", "Данные клиента сохранены")
-                # Блокируем редактирование после сохранения
-                self.name_input.setReadOnly(True)
-                self.surname_input.setReadOnly(True)
-                self.email_input.setReadOnly(True)
+                QMessageBox.information(self, "Успех", "Данные обновлены!")
+                # Проверяем, что данные действительно обновились
+                updated_client = self.client_controller.handle_client_search(phone)
+                print("Проверка в БД:", updated_client)  # Должен показать новые данные
             else:
-                QMessageBox.warning(self, "Ошибка", "Не удалось сохранить клиента")
-
+                QMessageBox.warning(self, "Ошибка", "Телефон занят или ошибка БД")
         except Exception as e:
-            QMessageBox.critical(self, "Ошибка", f"Ошибка базы данных: {str(e)}")
+            QMessageBox.critical(self, "Ошибка", f"Ошибка: {str(e)}")
 
     def clear_client_fields(self):
         self.current_client_id = None
@@ -219,46 +198,34 @@ class ClientOrderForm(QWidget):
         self.phone_display.clear()
 
     def load_products(self):
-        try:
-            products = self.db.execute_query(
-                "SELECT id, name, price FROM item WHERE in_stock > 0",
-                fetch=True
-            )
+        products = self.product_controller.get_available_products()
 
-            if not products:
-                QMessageBox.warning(self, "Ошибка", "Не удалось загрузить товары")
-                return
+        if not products:
+            QMessageBox.warning(self, "Ошибка", "Не удалось загрузить товары")
+            return
 
-            self.products_table.setColumnCount(4)  # Исправлено с 3 на 4
-            self.products_table.setRowCount(len(products))
+        self.products_table.setColumnCount(4)
+        self.products_table.setRowCount(len(products))
 
-            for row, (product_id, name, price) in enumerate(products):
-                # Название товара (нередактируемое)
-                name_item = QTableWidgetItem(name)
-                name_item.setFlags(name_item.flags() & ~Qt.ItemIsEditable)
-                self.products_table.setItem(row, 0, name_item)
+        for row, (product_id, name, price) in enumerate(products):
+            name_item = QTableWidgetItem(name)
+            name_item.setFlags(name_item.flags() & ~Qt.ItemIsEditable)
+            self.products_table.setItem(row, 0, name_item)
 
-                # Цена товара (нередактируемая)
-                price_item = QTableWidgetItem(f"{price:.2f}")
-                price_item.setFlags(price_item.flags() & ~Qt.ItemIsEditable)
-                self.products_table.setItem(row, 1, price_item)
+            price_item = QTableWidgetItem(f"{price:.2f}")
+            price_item.setFlags(price_item.flags() & ~Qt.ItemIsEditable)
+            self.products_table.setItem(row, 1, price_item)
 
-                # Поле для ввода количества
-                quantity_input = QLineEdit()
-                quantity_input.setValidator(QIntValidator(1, 100))
-                quantity_input.setText("1")
-                self.products_table.setCellWidget(row, 2, quantity_input)
+            quantity_input = QLineEdit()
+            quantity_input.setValidator(QIntValidator(1, 100))
+            quantity_input.setText("1")
+            self.products_table.setCellWidget(row, 2, quantity_input)
 
-                # Кнопка добавления в корзину
-                add_btn = QPushButton("Добавить")
-                add_btn.clicked.connect(lambda _, r=row: self.add_to_cart(r))
-                self.products_table.setCellWidget(row, 3, add_btn)
-
-        except Exception as e:
-            QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить товары: {e}")
+            add_btn = QPushButton("Добавить")
+            add_btn.clicked.connect(lambda _, r=row: self.add_to_cart(r))
+            self.products_table.setCellWidget(row, 3, add_btn)
 
     def add_to_cart(self, row):
-        """Добавляем выбранный товар в корзину."""
         try:
             product_name = self.products_table.item(row, 0).text()
             price = float(self.products_table.item(row, 1).text())
@@ -268,117 +235,46 @@ class ClientOrderForm(QWidget):
                 QMessageBox.warning(self, "Ошибка", "Количество должно быть больше 0")
                 return
 
-            # Получаем ID продукта перед добавлением в корзину
-            product_id = self.get_product_id(row)
+            product_id = self.product_controller.get_product_id_by_name(product_name)
             if product_id is None:
                 QMessageBox.warning(self, "Ошибка", "Не удалось определить ID товара")
                 return
 
-            # Проверяем, есть ли уже такой товар в корзине
             if product_id in self.cart_items:
-                # Увеличиваем количество существующего товара
                 self.cart_items[product_id]['quantity'] += quantity
             else:
-                # Добавляем новый товар в корзину
                 self.cart_items[product_id] = {
                     'name': product_name,
                     'price': price,
                     'quantity': quantity
                 }
-                # Добавляем в список для отображения
                 self.cart.append(self.cart_items[product_id])
 
-            self.update_cart_table()  # Обновляем корзину
-            self.products_table.cellWidget(row, 2).setText("1")  # Сбрасываем поле ввода
+            self.update_cart_table()
+            self.products_table.cellWidget(row, 2).setText("1")
 
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось добавить товар: {str(e)}")
 
     def update_cart_table(self):
-        """Обновляем отображение корзины"""
         self.cart_table.setRowCount(len(self.cart))
         for row, item in enumerate(self.cart):
             self.cart_table.setItem(row, 0, QTableWidgetItem(item['name']))
             self.cart_table.setItem(row, 1, QTableWidgetItem(f"{item['price']:.2f}"))
             self.cart_table.setItem(row, 2, QTableWidgetItem(str(item['quantity'])))
 
-            # Кнопка удаления из корзины
             remove_btn = QPushButton("Удалить")
             remove_btn.clicked.connect(lambda _, r=row: self.remove_from_cart(r))
             self.cart_table.setCellWidget(row, 3, remove_btn)
 
     def remove_from_cart(self, row):
-        """Удаляем товар из корзины."""
         if 0 <= row < len(self.cart):
-            product_id = self.get_product_id_by_name(self.cart[row]['name'])
+            product_id = self.product_controller.get_product_id_by_name(self.cart[row]['name'])
             del self.cart_items[product_id]
             self.cart.pop(row)
             self.update_cart_table()
 
-    def get_product_id(self, row):
-        """Получаем ID продукта из таблицы продуктов."""
-        try:
-            product_name = self.products_table.item(row, 0).text()
-            result = self.db.execute_query(
-                "SELECT id FROM item WHERE name = %s",
-                (product_name,),
-                fetch=True
-            )
-            if result and len(result) > 0:
-                return result[0][0]
-            return None
-        except Exception as e:
-            print(f"Ошибка получения ID товара: {e}")
-            return None
-
-    def get_product_id_by_name(self, name):
-        """Получаем ID товара по названию."""
-        try:
-            result = self.db.execute_query(
-                "SELECT id FROM item WHERE name = %s",
-                (name,),
-                fetch=True
-            )
-            if result:
-                return result[0][0]
-            return None
-        except Exception as e:
-            print(f"Ошибка получения ID товара: {e}")
-            return None
-
-    def get_client_id(self):
-        """Создаем или получаем ID клиента."""
-        try:
-            phone = self.client_phone_input.text().strip()
-            if not phone:
-                QMessageBox.warning(self, "Ошибка", "Телефон обязателен для создания клиента")
-                return None
-
-            result = self.db.execute_query(
-                "INSERT INTO client (name, surname, email, phone) "
-                "VALUES (%s, %s, %s, %s) "
-                "ON CONFLICT (phone) DO UPDATE SET "
-                "name = EXCLUDED.name, "
-                "surname = EXCLUDED.surname, "
-                "email = EXCLUDED.email "
-                "RETURNING id",
-                (self.name_input.text(),
-                 self.surname_input.text(),
-                 self.email_input.text(),
-                 phone),
-                fetch=True
-            )
-
-            if result:
-                return result[0][0]
-            return None
-
-        except Exception as e:
-            print(f"Ошибка получения ID клиента: {e}")
-            return None
-
     def submit_order(self):
-        """Обрабатываем оформление заказа."""
         if not all([self.name_input.text(), self.surname_input.text(),
                     self.email_input.text(), self.address_input.text()]):
             QMessageBox.warning(self, "Ошибка", "Заполните все обязательные поля")
@@ -389,148 +285,182 @@ class ClientOrderForm(QWidget):
             return
 
         try:
-            client_id = self.get_client_id()
-            if not client_id:
-                raise Exception("Не удалось создать/найти клиента")
+            phone = self.client_phone_input.text().strip()
+            if not phone:
+                raise Exception("Телефон обязателен")
 
-            total = sum(item['price'] * item['quantity'] for item in self.cart)
+            # Получаем или создаем клиента
+            result = self.client_controller.handle_client_update(
+                self.name_input.text(),
+                self.surname_input.text(),
+                self.email_input.text(),
+                phone,
+                self.current_client_id  # Передаем текущий ID, если клиент существует
+            )
+            if not isinstance(result, int):
+                raise Exception("Ошибка: некорректный ID клиента")
 
-            # Создаем заказ (без delivery_company_id)
-            order_result = self.db.execute_query(
-                "INSERT INTO orders (client_id, delivery_address, total, status) "
-                "VALUES (%s, %s, %s, 'обрабатывается') RETURNING id",
-                (client_id, self.address_input.text(), total),
-                fetch=True
+            client_id = result
+            print(f"Используем client_id: {client_id} ({type(client_id)})")  # Для отладки
+            if not result:
+                raise Exception("Не удалось получить/создать клиента. Возможно телефон занят другим клиентом")
+
+            # Обрабатываем разные форматы возвращаемого значения
+            if isinstance(result, tuple):
+                client_id = result[0][0]
+            elif isinstance(result, int):
+                client_id = result
+            else:
+                raise Exception("Неожиданный формат данных клиента")
+
+            self.current_client_id = client_id  # Сохраняем ID для будущих обновлений
+
+            # Подготавливаем товары для заказа
+            order_items = []
+            for item in self.cart:
+                product_id = self.product_controller.get_product_id_by_name(item['name'])
+                if not product_id:
+                    raise Exception(f"Не найден ID товара: {item['name']}")
+
+                order_items.append({
+                    'id': product_id,
+                    'price': item['price'],
+                    'quantity': item['quantity']
+                })
+
+            # Создаем заказ
+            order_id = self.order_controller.create_new_order(
+                client_id,
+                self.address_input.text(),
+                order_items
             )
 
-            if not order_result:
-                raise Exception("Не удалось создать заказ")
+            if not order_id:
+                raise Exception("Не удалось создать заказ в базе данных")
 
-            order_id = order_result[0][0]
-
-            # Добавляем товары в заказ (используем правильное имя столбца quantitity)
+            # Обновляем остатки товаров
             for item in self.cart:
-                product_id = self.get_product_id_by_name(item['name'])
+                product_id = self.product_controller.get_product_id_by_name(item['name'])
+                self.product_controller.update_product_stock(product_id, item['quantity'])
 
-                self.db.execute_query(
-                    "INSERT INTO check_item (check_id, item_id, quantitity) "
-                    "VALUES (%s, %s, %s)",
-                    (order_id, product_id, item['quantity'])
-                )
-
-                # Обновляем остатки
-                self.db.execute_query(
-                    "UPDATE item SET in_stock = in_stock - %s WHERE id = %s",
-                    (item['quantity'], product_id)
-                )
-
-            # Очищаем корзину
+            # Показываем чек и очищаем корзину
             self.show_receipt(order_id)
             self.cart.clear()
             self.cart_items.clear()
             self.update_cart_table()
+
             QMessageBox.information(self, "Успех", f"Заказ #{order_id} успешно оформлен!")
+
+            # Сбрасываем форму для нового заказа
+            self.address_input.clear()
+            self.current_client_id = None
 
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось оформить заказ: {str(e)}")
+            print(f"Ошибка при оформлении заказа: {str(e)}")  # Для отладки
 
     def show_receipt(self, order_id):
-        """Отображаем чек заказа."""
         try:
-            # Получаем данные о заказе
-            order_info = self.db.execute_query(
-                "SELECT o.id, c.name, c.surname, o.total, o.delivery_address "
-                "FROM orders o JOIN client c ON o.client_id = c.id "
-                "WHERE o.id = %s",
-                (order_id,),
-                fetch=True
-            )
-
+            # Получаем информацию о заказе
+            order_info = self.order_controller.get_order_info(order_id)
             if not order_info:
-                raise Exception("Не удалось получить данные заказа")
+                raise Exception("Заказ не найден")
 
             # Получаем товары в заказе
-            items = self.db.execute_query(
-                "SELECT i.name, ci.quantitity, i.price "
-                "FROM check_item ci JOIN item i ON ci.item_id = i.id "
-                "WHERE ci.check_id = %s",
-                (order_id,),
-                fetch=True
-            )
+            items = self.order_controller.get_order_items(order_id)
+            if not items:
+                raise Exception("Товары в заказе не найдены")
 
             # Формируем текст чека
             receipt_text = (
-                f"Заказ №{order_info[0][0]}\n"
-                f"Клиент: {order_info[0][1]} {order_info[0][2]}\n"
-                f"Адрес: {order_info[0][4]}\n"
-                f"Сумма: {order_info[0][3]:.2f}\n\n"
+                f"Заказ №{order_info[0]}\n"
+                f"Клиент: {order_info[2]} {order_info[1]}\n"
+                f"Адрес: {order_info[4]}\n"
+                f"Сумма: {order_info[3]:.2f}\n\n"
                 "Товары:\n"
             )
 
             for item in items:
-                receipt_text += f"- {item[0]}: {item[1]} x {item[2]:.2f}\n"
+                receipt_text += f"- {item[0]}: {item[1]} x {item[2]:.2f} = {item[1] * item[2]:.2f}\n"
 
             # Показываем чек
             msg = QMessageBox()
-            msg.setWindowTitle("Чек заказа")
+            msg.setWindowTitle(f"Чек заказа №{order_id}")
             msg.setText(receipt_text)
             msg.exec_()
 
         except Exception as e:
-            QMessageBox.critical(self, "Ошибка", f"Не удалось сформировать чек: {str(e)}")
+            QMessageBox.critical(self, "Ошибка", f"Ошибка при формировании чека: {str(e)}")
+            print(f"[ОШИБКА] show_receipt: {str(e)}")
 
     def open_order_filter(self):
-        """Открывает форму фильтра заказов"""
         try:
-            # Динамический импорт для избежания циклических зависимостей
             from views.order_filter_form import OrderFilterForm
-
-            self.filter_form = OrderFilterForm(self.db)
+            self.filter_form = OrderFilterForm(self.order_controller)
             self.filter_form.show()
-            self.hide()  # Скрываем текущую форму вместо закрытия
+            self.hide()
         except ImportError as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить модуль: {str(e)}")
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось открыть форму: {str(e)}")
 
     def toggle_client_mode(self, index):
-        """Переключает режим работы с клиентом"""
-        if index == 0:  # Режим поиска
+        if index == 0:
             self.client_action_btn.setText("Найти")
             self.client_phone_input.setReadOnly(False)
             self.client_phone_input.setPlaceholderText("Введите телефон для поиска")
             self.clear_client_fields()
-        else:  # Режим создания
+        else:
             self.client_action_btn.setText("Создать")
             self.client_phone_input.setReadOnly(False)
             self.client_phone_input.setPlaceholderText("Введите телефон нового клиента")
             self.clear_client_fields()
 
     def handle_client_action(self):
-        """Обрабатывает действие с клиентом (поиск/создание)"""
-        if self.client_mode.currentIndex() == 0:
-            self.search_client()
-        else:
-            self.create_new_client()
-
-    def create_new_client(self):
-        """Создает нового клиента"""
         phone = self.client_phone_input.text().strip()
         if not phone:
             QMessageBox.warning(self, "Ошибка", "Введите телефон клиента")
             return
 
-        # Очищаем поля и разрешаем редактирование
+        # Ищем клиента
+        result = self.client_controller.handle_client_search(phone)
+
+        if result:  # Клиент найден
+            client_id, name, surname, email, phone = result
+            self.current_client_id = client_id
+            self.name_input.setText(name)
+            self.surname_input.setText(surname)
+            self.email_input.setText(email)
+            self.phone_display.setText(phone)
+            self.name_input.setReadOnly(False)  # Разрешаем редактирование
+            self.surname_input.setReadOnly(False)
+            self.email_input.setReadOnly(False)
+            self.update_btn.setEnabled(True)
+            self.update_btn.setText("Обновить данные")
+        else:  # Клиент не найден - создаем нового
+            self.clear_client_fields()
+            self.name_input.setReadOnly(False)
+            self.surname_input.setReadOnly(False)
+            self.email_input.setReadOnly(False)
+            self.phone_display.setText(phone)
+            self.update_btn.setEnabled(True)
+            self.update_btn.setText("Создать клиента")
+            self.current_client_id = None
+
+    def create_new_client(self):
+        phone = self.client_phone_input.text().strip()
+        if not phone:
+            QMessageBox.warning(self, "Ошибка", "Введите телефон клиента")
+            return
+
         self.clear_client_fields()
         self.name_input.setReadOnly(False)
         self.surname_input.setReadOnly(False)
         self.email_input.setReadOnly(False)
-
-        # Устанавливаем телефон (только для отображения)
         self.phone_display.setText(phone)
-
-        # Активируем кнопку сохранения
         self.update_btn.setEnabled(True)
+        self.update_btn.setText("Сохранить клиента")
+        self.current_client_id = None
 
-        QMessageBox.information(self, "Создание", "Заполните данные нового клиента и нажмите 'Обновить данные'")
-
+        QMessageBox.information(self, "Создание",
+                                "Заполните данные нового клиента и нажмите 'Сохранить клиента'")
