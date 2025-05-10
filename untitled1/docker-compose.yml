@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: nestjs_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: nestjs123
+      POSTGRES_DB: video_db
+    ports:
+      - "5666:5432"
+    volumes:
+      - video_db_data:/var/lib/postgresql/data
+      - ./requests/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d video_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  video_db_data:
