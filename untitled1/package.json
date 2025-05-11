@@ -11,8 +11,6 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@nestjs/typeorm": "^11.0.0",
-    "mysql2": "^3.14.0",
-    "typeorm": "^0.3.22"
+    "@nestjs/platform-express": "^11.1.0"
   }
 }
