@@ -1,0 +1,46 @@
+[
+  {
+    "id": 1,
+    "title": "Коты в 4K",
+    "description": "Смешные и милые котики в высоком качестве",
+    "category": "Животные",
+    "previewImage": "img/cats-preview.jpg",
+    "videoUrl": "videos/cats.mp4",
+    "views": 1500000,
+    "likes": 120000,
+    "uploadDate": "2023-05-15"
+  },
+  {
+    "id": 2,
+    "title": "Путешествия по миру",
+    "description": "Лучшие места для посещения в 2023",
+    "category": "Путешествия",
+    "previewImage": "img/travel-preview.jpg",
+    "videoUrl": "videos/travel.mp4",
+    "views": 890000,
+    "likes": 75000,
+    "uploadDate": "2023-04-20"
+  },
+  {
+    "id": 3,
+    "title": "Великие картины мира!",
+    "description": "Лекция о шедеврах мирового искусства",
+    "category": "Искусство",
+    "previewImage": "img/art-preview.jpg",
+    "videoUrl": "videos/art.mp4",
+    "views": 120,
+    "likes": 5,
+    "uploadDate": "2017-02-15"
+  },
+  {
+    "id": 4,
+    "title": "Уроки по математике",
+    "description": "Дроби 5 класс",
+    "category": "Учеба",
+    "previewImage": "img/math-preview.jpg",
+    "videoUrl": "videos/math.mp4",
+    "views": 23,
+    "likes": 2,
+    "uploadDate": "2019-05-15"
+  }
+]

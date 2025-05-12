@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Просмотр видео</title>
+    <!-- Подключение стилей (ОБРАТИТЕ ВНИМАНИЕ НА ПУТЬ!) -->
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Для сброса кэша при разработке -->
+    <link rel="stylesheet" href="css/style.css?v=1.1">
+</head>
+<body>
+<div class="container">
+    <!-- Кнопка назад -->
+    <a href="index.html" class="btn back-btn">← Назад к списку</a>
+
+    <!-- Видеоплеер -->
+    <div class="video-player">
+        <video controls id="mainVideo" class="video-element">
+            Ваш браузер не поддерживает видео
+        </video>
+    </div>
+
+    <!-- Информация о видео -->
+    <div class="video-info">
+        <h1 id="videoTitle" class="video-title">Название видео</h1>
+
+        <div class="meta-info">
+            <span id="videoViews" class="views-count">0 просмотров</span>
+            <span id="videoLikes" class="likes-count">0 лайков</span>
+            <span id="videoDate" class="upload-date">Дата загрузки</span>
+        </div>
+
+        <p id="videoDescription" class="description">Описание видео</p>
+        <p id="videoCategory" class="category">Категория: Не указана</p>
+    </div>
+
+    <!-- Форма редактирования (изначально скрыта) -->
+    <div class="edit-form" id="editForm">
+        <h2>Редактирование видео</h2>
+        <form id="videoEditForm">
+            <div class="form-group">
+                <label for="editTitle">Название:</label>
+                <input type="text" id="editTitle" class="form-input" required>
+            </div>
+
+            <div class="form-group">
+                <label for="editDescription">Описание:</label>
+                <textarea id="editDescription" class="form-textarea" required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="editCategory">Категория:</label>
+                <input type="text" id="editCategory" class="form-input" required>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" id="saveBtn" class="btn save-btn">Сохранить</button>
+                <button type="button" id="cancelBtn" class="btn cancel-btn">Отмена</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Кнопки действий -->
+    <div class="action-buttons">
+        <button id="editBtn" class="btn edit-btn">Редактировать</button>
+        <button id="deleteBtn" class="btn delete-btn">Удалить видео</button>
+    </div>
+
+    <!-- Блок для сообщений -->
+    <div id="message" class="message"></div>
+</div>
+
+<!-- Подключение JavaScript (ОБРАТИТЕ ВНИМАНИЕ НА ПУТЬ!) -->
+<script type="module" src="js/video.js"></script>
+</body>
+</html>
